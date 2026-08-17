@@ -49,7 +49,7 @@ type Reading = {
   fan_speed: number;
   power_draw: number;
   created_at: string;
-  assets: { name: string } | null;
+  assets: { name: string }[] | null;
 };
 
 export default function Dashboard() {
@@ -100,7 +100,7 @@ export default function Dashboard() {
         <tbody>
           {readings.map((r) => (
             <tr key={r.id}>
-              <td>{r.assets?.name ?? '—'}</td>
+              <td>{r.assets?.[0]?.name ?? '—'}</td>
               <td style={{ color: isBreached('temperature', r.temperature, r.asset_id, rules) ? 'red' : 'inherit' }}>
                 {r.temperature}
               </td>
