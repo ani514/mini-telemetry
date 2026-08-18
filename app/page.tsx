@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 
-// maps each operator string to the actual comparison it represents
 const OPERATORS: Record<string, (value: number, threshold: number) => boolean> = {
   '>':  (value, threshold) => value > threshold,
   '<':  (value, threshold) => value < threshold,
@@ -18,7 +17,6 @@ type AlertRule = {
   threshold: number;
 };
 
-// one reading row, with the asset's name flattened to a top-level field
 type Reading = {
   id: number;
   asset_id: number;
@@ -29,7 +27,6 @@ type Reading = {
   assetName: string;
 };
 
-// does this reading's `metric` breach any rule for its asset?
 function isBreached(
   metricName: string,
   value: number,
@@ -52,41 +49,47 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function load() {
-      // fetch readings joined to their asset's name
+      // pull recent readings, newest first
       const { data, error } = await supabase
         .from('readings')
         .select('id, asset_id, temperature, fan_speed, power_draw, created_at, assets(name)')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (error) {
         setError(error.message);
         return;
       }
 
-      // normalize the join shape at the boundary: assets may come back as an
-      // object OR an array depending on how the relationship is detected, so
-      // flatten it to a plain assetName field the rest of the UI can rely on
-      const flattened: Reading[] = (data ?? []).map((row: any) => ({
-        id: row.id,
-        asset_id: row.asset_id,
-        temperature: row.temperature,
-        fan_speed: row.fan_speed,
-        power_draw: row.power_draw,
-        created_at: row.created_at,
-        assetName: Array.isArray(row.assets)
-          ? row.assets[0]?.name ?? '—'
-          : row.assets?.name ?? '—',
-      }));
-      setReadings(flattened);
+      // normalize the join shape, then keep only the NEWEST reading per asset
+      const seen = new Set<number>();
+      const latest: Reading[] = [];
+      for (const row of (data ?? []) as any[]) {
+        if (seen.has(row.asset_id)) continue;  // already have this asset's newest
+        seen.add(row.asset_id);
+        latest.push({
+          id: row.id,
+          asset_id: row.asset_id,
+          temperature: row.temperature,
+          fan_speed: row.fan_speed,
+          power_draw: row.power_draw,
+          created_at: row.created_at,
+          assetName: Array.isArray(row.assets)
+            ? row.assets[0]?.name ?? '—'
+            : row.assets?.name ?? '—',
+        });
+      }
+      setReadings(latest);
 
-      // fetch alert rules for breach checking
       const { data: ruleData } = await supabase
         .from('alert_rules')
         .select('asset_id, metric, operator, threshold');
       setRules((ruleData as AlertRule[]) ?? []);
     }
 
-    load();
+    load();                                // fetch immediately
+    const interval = setInterval(load, 5000); // then every 5s (live updates)
+    return () => clearInterval(interval);  // cleanup when page unmounts
   }, []);
 
   return (
