@@ -3,13 +3,30 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 
-
 // maps each operator string to the actual comparison it represents
 const OPERATORS: Record<string, (value: number, threshold: number) => boolean> = {
   '>':  (value, threshold) => value > threshold,
   '<':  (value, threshold) => value < threshold,
   '>=': (value, threshold) => value >= threshold,
   '<=': (value, threshold) => value <= threshold,
+};
+
+type AlertRule = {
+  asset_id: number;
+  metric: string;
+  operator: string;
+  threshold: number;
+};
+
+// one reading row, with the asset's name flattened to a top-level field
+type Reading = {
+  id: number;
+  asset_id: number;
+  temperature: number;
+  fan_speed: number;
+  power_draw: number;
+  created_at: string;
+  assetName: string;
 };
 
 // does this reading's `metric` breach any rule for its asset?
@@ -19,47 +36,23 @@ function isBreached(
   assetId: number,
   rules: AlertRule[]
 ): boolean {
-  // .some() returns true if ANY rule in the array passes the test
   return rules.some((rule) => {
-    // does this rule apply to THIS asset and THIS metric?
     const matches = rule.asset_id === assetId && rule.metric === metricName;
-    if (!matches) return false;              // not our rule → skip it
-
-    // look up the comparison function for this operator
+    if (!matches) return false;
     const compare = OPERATORS[rule.operator];
-    if (!compare) return false;              // unknown operator → treat as no breach
-
-    // call it: does value cross threshold?
+    if (!compare) return false;
     return compare(value, rule.threshold);
   });
 }
 
-type AlertRule = {
-  asset_id: number;
-  metric: string;
-  operator: string;
-  threshold: number;
-};
-
-// shape of one joined reading row (readings + the asset's name)
-type Reading = {
-  id: number;
-  asset_id: number;
-  temperature: number;
-  fan_speed: number;
-  power_draw: number;
-  created_at: string;
-  assets: { name: string }[] | null;
-};
-
-//comment 
 export default function Dashboard() {
   const [readings, setReadings] = useState<Reading[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [rules, setRules] = useState<AlertRule[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     async function load() {
-      // same query as hello-db.js, but joining the asset name in
+      // fetch readings joined to their asset's name
       const { data, error } = await supabase
         .from('readings')
         .select('id, asset_id, temperature, fan_speed, power_draw, created_at, assets(name)')
@@ -69,16 +62,30 @@ export default function Dashboard() {
         setError(error.message);
         return;
       }
-      setReadings((data as Reading[]) ?? []);
 
+      // normalize the join shape at the boundary: assets may come back as an
+      // object OR an array depending on how the relationship is detected, so
+      // flatten it to a plain assetName field the rest of the UI can rely on
+      const flattened: Reading[] = (data ?? []).map((row: any) => ({
+        id: row.id,
+        asset_id: row.asset_id,
+        temperature: row.temperature,
+        fan_speed: row.fan_speed,
+        power_draw: row.power_draw,
+        created_at: row.created_at,
+        assetName: Array.isArray(row.assets)
+          ? row.assets[0]?.name ?? '—'
+          : row.assets?.name ?? '—',
+      }));
+      setReadings(flattened);
+
+      // fetch alert rules for breach checking
       const { data: ruleData } = await supabase
-      .from('alert_rules')
-      .select('asset_id, metric, operator, threshold');
+        .from('alert_rules')
+        .select('asset_id, metric, operator, threshold');
       setRules((ruleData as AlertRule[]) ?? []);
-      
     }
 
-    
     load();
   }, []);
 
@@ -101,7 +108,7 @@ export default function Dashboard() {
         <tbody>
           {readings.map((r) => (
             <tr key={r.id}>
-              <td>{r.assets?.[0]?.name ?? '—'}</td>
+              <td>{r.assetName}</td>
               <td style={{ color: isBreached('temperature', r.temperature, r.asset_id, rules) ? 'red' : 'inherit' }}>
                 {r.temperature}
               </td>
