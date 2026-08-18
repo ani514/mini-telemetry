@@ -93,39 +93,63 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <main style={{ padding: 32, fontFamily: 'sans-serif' }}>
-      <h1>Data Center Telemetry</h1>
+    <main className="min-h-screen bg-slate-950 text-slate-100 p-8">
+      <div className="max-w-5xl mx-auto">
+        {/* header */}
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Data Center Telemetry
+          </h1>
+          <span className="flex items-center gap-2 text-sm text-slate-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            Live
+          </span>
+        </div>
+        <p className="text-slate-400 text-sm mb-8">
+          Real-time monitoring · updates every 5s · breaches flagged in red
+        </p>
 
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+        {error && (
+          <p className="text-red-400 mb-4">Error: {error}</p>
+        )}
 
-      <table cellPadding={8} style={{ borderCollapse: 'collapse', marginTop: 16 }}>
-        <thead>
-          <tr>
-            <th style={{ borderBottom: '2px solid #ccc', textAlign: 'left' }}>Asset</th>
-            <th style={{ borderBottom: '2px solid #ccc', textAlign: 'left' }}>Temp (°C)</th>
-            <th style={{ borderBottom: '2px solid #ccc', textAlign: 'left' }}>Fan (RPM)</th>
-            <th style={{ borderBottom: '2px solid #ccc', textAlign: 'left' }}>Power (kW)</th>
-            <th style={{ borderBottom: '2px solid #ccc', textAlign: 'left' }}>Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          {readings.map((r) => (
-            <tr key={r.id}>
-              <td>{r.assetName}</td>
-              <td style={{ color: isBreached('temperature', r.temperature, r.asset_id, rules) ? 'red' : 'inherit' }}>
-                {r.temperature}
-              </td>
-              <td style={{ color: isBreached('fan_speed', r.fan_speed, r.asset_id, rules) ? 'red' : 'inherit' }}>
-                {r.fan_speed}
-              </td>
-              <td style={{ color: isBreached('power_draw', r.power_draw, r.asset_id, rules) ? 'red' : 'inherit' }}>
-                {r.power_draw}
-              </td>
-              <td>{new Date(r.created_at).toLocaleString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        {/* table card */}
+        <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-800 text-slate-400">
+                <th className="text-left font-medium px-5 py-3">Asset</th>
+                <th className="text-left font-medium px-5 py-3">Temp (°C)</th>
+                <th className="text-left font-medium px-5 py-3">Fan (RPM)</th>
+                <th className="text-left font-medium px-5 py-3">Power (kW)</th>
+                <th className="text-left font-medium px-5 py-3">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {readings.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-b border-slate-800/50 last:border-0 hover:bg-slate-800/30 transition-colors"
+                >
+                  <td className="px-5 py-3 font-medium">{r.assetName}</td>
+                  <td className={`px-5 py-3 tabular-nums ${isBreached('temperature', r.temperature, r.asset_id, rules) ? 'text-red-400 font-semibold' : ''}`}>
+                    {r.temperature}
+                  </td>
+                  <td className={`px-5 py-3 tabular-nums ${isBreached('fan_speed', r.fan_speed, r.asset_id, rules) ? 'text-red-400 font-semibold' : ''}`}>
+                    {r.fan_speed}
+                  </td>
+                  <td className={`px-5 py-3 tabular-nums ${isBreached('power_draw', r.power_draw, r.asset_id, rules) ? 'text-red-400 font-semibold' : ''}`}>
+                    {r.power_draw}
+                  </td>
+                  <td className="px-5 py-3 text-slate-400 tabular-nums">
+                    {new Date(r.created_at).toLocaleTimeString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </main>
   );
 }
