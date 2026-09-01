@@ -1,3 +1,5 @@
+// Comes with create-next-app. This is the root layout for the entire application. It wraps all pages and components in a consistent layout, including global styles and fonts.
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
