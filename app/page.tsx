@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import AskBox from './AskBox';
 
 // This represents a row on the dashboard. One row is an asset, metric pair. This row is a narrowed down to cater to the device-agnostic nature of the dashboard. 
 // A rack contains three rows, a PDU 2, etc.
@@ -125,6 +126,8 @@ export default function Dashboard() {
         <p className="text-slate-400 text-sm mb-8">
           Real-time monitoring · InfluxDB · catalog-driven · out-of-range flagged in red
         </p>
+
+        <AskBox />
 
         {error && <p className="text-red-400 mb-4">Error: {error}</p>}
 
