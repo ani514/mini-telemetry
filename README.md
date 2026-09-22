@@ -26,7 +26,7 @@ readings,asset_id=1,device_type=server_rack,metric=power_draw value=4.30 <timest
 
 The tags (`asset_id`, `device_type`, `metric`) are the indexed dimensions used to filter and group; `value` is the single measured field. The agent reads the metric catalog to decide what each device emits, so adding a new device type is a data change, not a code change, solving the problem we had earlier.
 
-## Natural-Language Queries
+## A Natural New Feature
 
 Looking at a live updating dashboard could get weary. So, we created a Claude agent which answers plain-English queries about the telemetry and shows the SQL it ran to get that information. The query box lives right above the dashboard table.
 
@@ -60,7 +60,7 @@ node ask/cli.js "your question" [--debug]
 
 For the question box, run `npm run dev` from the repo root with the same keys in `.env.local`. On the hosted Vercel deploy, the box reports that it runs locally only.
 
-## Next Steps
+## Natural Next Steps
 
 We now have a live telemetry platform equipped with a NL-to-SQL agent layer. The next step will be to replace the simulated readings with real hardware. I can start with readings from my own laptop.
 
